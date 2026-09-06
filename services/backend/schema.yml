@@ -1,0 +1,1887 @@
+openapi: 3.0.3
+info:
+  title: EQi30 API
+  version: 1.0.0
+  description: REST API documentation for the EQi30 backend.
+paths:
+  /api/v1/abilities/:
+    get:
+      operationId: v1_abilities_list
+      description: The 6 competencies with their 30 abilities (catalog order).
+      tags:
+      - Abilities
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Competency'
+          description: ''
+  /api/v1/abilities/{ability_id}/days/{day_number}/:
+    get:
+      operationId: v1_abilities_days_retrieve
+      description: Daily learning content for an ability (teaching, practice, plan,
+        reflection).
+      parameters:
+      - in: path
+        name: ability_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: day_number
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Learning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbilityDayContent'
+          description: ''
+  /api/v1/ai/assessment/analyze/:
+    post:
+      operationId: v1_ai_assessment_analyze_create
+      description: |-
+        POST /api/v1/ai/assessment/analyze
+        Runs the full stateless AI pipeline over a submitted assessment.
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/chat/respond/:
+    post:
+      operationId: v1_ai_chat_respond_create
+      description: |-
+        POST /api/v1/ai/chat/respond
+        Provides conversational coaching.
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/ai/journey/recommend/:
+    post:
+      operationId: v1_ai_journey_recommend_create
+      description: |-
+        POST /api/v1/ai/journey/recommend
+        Recommends a personalized learning journey based on assessment scores.
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/change-password/:
+    put:
+      operationId: v1_auth_change_password_update
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/forgot-password/:
+    post:
+      operationId: v1_auth_forgot_password_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      description: |-
+        Create a pending (inactive) account and send an email-verification OTP.
+
+        The user cannot log in until they submit the OTP to /auth/verify-email/.
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /api/v1/auth/resend-email-otp/:
+    post:
+      operationId: v1_auth_resend_email_otp_create
+      description: Resend the email-verification OTP for a pending (inactive) account.
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/resend-otp/:
+    post:
+      operationId: v1_auth_resend_otp_create
+      description: Issuing a new OTP invalidates the previous one (single active code).
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/reset-password/:
+    post:
+      operationId: v1_auth_reset_password_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/verify-email/:
+    post:
+      operationId: v1_auth_verify_email_create
+      description: |-
+        Submit the email-verification OTP to activate the account.
+
+        On success the user is activated and JWT tokens are returned so the client
+        can proceed directly to the main app without a separate login step.
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyOTPRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyOTPRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyOTPRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/verify-otp/:
+    post:
+      operationId: v1_auth_verify_otp_create
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyOTPRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/check-ins/weekly/:
+    post:
+      operationId: v1_check_ins_weekly_create
+      tags:
+      - Learning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeeklyCheckInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WeeklyCheckInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WeeklyCheckInRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyCheckIn'
+          description: ''
+  /api/v1/content/faqs/:
+    get:
+      operationId: v1_content_faqs_list
+      tags:
+      - Support
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FAQ'
+          description: ''
+  /api/v1/content/privacy-policy/:
+    get:
+      operationId: v1_content_privacy_policy_retrieve
+      tags:
+      - Legal
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalDocument'
+          description: ''
+  /api/v1/content/terms-of-service/:
+    get:
+      operationId: v1_content_terms_of_service_retrieve
+      tags:
+      - Legal
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalDocument'
+          description: ''
+  /api/v1/feedback/:
+    post:
+      operationId: v1_feedback_create
+      description: Feedback / contact-support submission (attachment optional).
+      tags:
+      - Feedback
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportRequestRequest'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportRequest'
+          description: ''
+  /api/v1/growth-plans/:
+    get:
+      operationId: v1_growth_plans_list
+      tags:
+      - Journey
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GrowthPlan'
+          description: ''
+  /api/v1/guided-journey/:
+    get:
+      operationId: v1_guided_journey_list
+      tags:
+      - Journey
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GuidedJourneyImage'
+          description: ''
+  /api/v1/home/dashboard/:
+    get:
+      operationId: v1_home_dashboard_retrieve
+      description: Single aggregated endpoint for the Home screen.
+      tags:
+      - Progress
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/journey/:
+    get:
+      operationId: v1_journey_retrieve
+      description: The six competency sections in the user's personalized order.
+      tags:
+      - Journey
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/journey/history/:
+    get:
+      operationId: v1_journey_history_retrieve
+      description: All journeys of the user with completion stats.
+      tags:
+      - Journey
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/journey/today/:
+    get:
+      operationId: v1_journey_today_retrieve
+      description: Today's sessions (count follows the growth pace).
+      tags:
+      - Journey
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/onboarding/{session_uuid}/assessment/:
+    get:
+      operationId: v1_onboarding_assessment_retrieve
+      description: Receive / return the AI assessment for an anonymous session.
+      parameters:
+      - in: path
+        name: session_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Onboarding
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionState'
+          description: ''
+    post:
+      operationId: v1_onboarding_assessment_create
+      description: Receive / return the AI assessment for an anonymous session.
+      parameters:
+      - in: path
+        name: session_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Onboarding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssessmentSubmitRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AssessmentSubmitRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssessmentSubmitRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionState'
+          description: ''
+  /api/v1/onboarding/{session_uuid}/growth-plan/:
+    put:
+      operationId: v1_onboarding_growth_plan_update
+      parameters:
+      - in: path
+        name: session_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Onboarding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrowthPlanSelectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GrowthPlanSelectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GrowthPlanSelectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionState'
+          description: ''
+  /api/v1/onboarding/{session_uuid}/practice-time/:
+    put:
+      operationId: v1_onboarding_practice_time_update
+      parameters:
+      - in: path
+        name: session_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Onboarding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PracticeTimeSelectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PracticeTimeSelectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PracticeTimeSelectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionState'
+          description: ''
+  /api/v1/onboarding/{session_uuid}/priorities/:
+    patch:
+      operationId: v1_onboarding_priorities_partial_update
+      description: Accept the AI order or store a customized order (never touches
+        ai_priority).
+      parameters:
+      - in: path
+        name: session_uuid
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Onboarding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrioritiesUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrioritiesUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrioritiesUpdateRequest'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionState'
+          description: ''
+  /api/v1/onboarding/session/:
+    post:
+      operationId: v1_onboarding_session_create
+      tags:
+      - Onboarding
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionState'
+          description: ''
+  /api/v1/practice-times/:
+    get:
+      operationId: v1_practice_times_list
+      tags:
+      - Journey
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PracticeTimeOption'
+          description: ''
+  /api/v1/progress/tracker/:
+    get:
+      operationId: v1_progress_tracker_retrieve
+      description: Overall, competency and ability progress + streak, goals and badges.
+      tags:
+      - Progress
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/resources/:
+    get:
+      operationId: v1_resources_list
+      description: 'Resources library. Filters: ?type=VIDEO&competency=<code>&favorites=true'
+      tags:
+      - Resources
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+          description: ''
+  /api/v1/resources/{id}/favorite/:
+    post:
+      operationId: v1_resources_favorite_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Resources
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/sessions/{id}/complete/:
+    post:
+      operationId: v1_sessions_complete_create
+      description: Complete a session; progress, journey state and badges update from
+        it.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Learning
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/sessions/{id}/reflection/:
+    post:
+      operationId: v1_sessions_reflection_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Learning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyReflectionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DailyReflectionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DailyReflectionRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyReflection'
+          description: ''
+  /api/v1/subscription/plans/:
+    get:
+      operationId: v1_subscription_plans_list
+      tags:
+      - Subscriptions
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /api/v1/subscription/status/:
+    get:
+      operationId: v1_subscription_status_retrieve
+      tags:
+      - Subscriptions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSubscription'
+          description: ''
+  /api/v1/user/account/:
+    delete:
+      operationId: v1_user_account_destroy
+      tags:
+      - Profile & Account
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/user/profile/:
+    get:
+      operationId: v1_user_profile_retrieve
+      description: GET / PATCH the authenticated user's profile.
+      tags:
+      - Profile & Account
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: v1_user_profile_partial_update
+      description: GET / PATCH the authenticated user's profile.
+      tags:
+      - Profile & Account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfileRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/v1/user/reminders/:
+    get:
+      operationId: v1_user_reminders_retrieve
+      description: GET / PUT the authenticated user's reminder settings.
+      tags:
+      - Profile & Account
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReminder'
+          description: ''
+    put:
+      operationId: v1_user_reminders_update
+      description: GET / PUT the authenticated user's reminder settings.
+      tags:
+      - Profile & Account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserReminderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserReminderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserReminderRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReminder'
+          description: ''
+components:
+  schemas:
+    AbilityDayContent:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ability_id:
+          type: integer
+          readOnly: true
+        ability_name:
+          type: string
+          readOnly: true
+        competency:
+          type: string
+          readOnly: true
+        day_number:
+          type: integer
+          description: Content day within this ability (1 = first visit).
+        title:
+          type: string
+          maxLength: 200
+        teaching_content:
+          type: string
+        practice_content:
+          type: string
+        real_life_plan:
+          type: string
+        reflection_question:
+          type: string
+        estimated_minutes:
+          type: integer
+      required:
+      - ability_id
+      - ability_name
+      - competency
+      - id
+      - title
+    AssessmentEntryRequest:
+      type: object
+      properties:
+        competency:
+          type: string
+          minLength: 1
+        score:
+          type: number
+          format: double
+          maximum: 100
+          minimum: 0
+        ai_priority:
+          type: integer
+          minimum: 1
+      required:
+      - ai_priority
+      - competency
+      - score
+    AssessmentResult:
+      type: object
+      properties:
+        competency:
+          type: string
+          readOnly: true
+        competency_name:
+          type: string
+          readOnly: true
+        score:
+          type: number
+          format: double
+          nullable: true
+        ai_priority:
+          type: integer
+        user_priority:
+          type: integer
+          nullable: true
+      required:
+      - ai_priority
+      - competency
+      - competency_name
+    AssessmentSubmitRequest:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentEntryRequest'
+      required:
+      - results
+    BillingPeriodEnum:
+      enum:
+      - MONTHLY
+      - YEARLY
+      type: string
+      description: |-
+        * `MONTHLY` - Monthly
+        * `YEARLY` - Yearly
+    ChangePasswordRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+        new_password:
+          type: string
+          minLength: 1
+      required:
+      - current_password
+      - new_password
+    Competency:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        code:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        icon:
+          type: string
+          format: uri
+          nullable: true
+        display_order:
+          type: integer
+          description: Fallback order when the user has no personalized priority.
+        abilities:
+          type: string
+          readOnly: true
+      required:
+      - abilities
+      - code
+      - id
+      - name
+    CompetencySummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        code:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        icon:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - code
+      - id
+      - name
+    DailyReflection:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        session:
+          type: integer
+          readOnly: true
+        response:
+          type: string
+          description: Selected quick-reflection option.
+          maxLength: 255
+        reflection_text:
+          type: string
+        practice_answer:
+          type: string
+        real_life_answer:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - session
+    DailyReflectionRequest:
+      type: object
+      properties:
+        response:
+          type: string
+          description: Selected quick-reflection option.
+          maxLength: 255
+        reflection_text:
+          type: string
+        practice_answer:
+          type: string
+        real_life_answer:
+          type: string
+    EmailVerifyOTPRequest:
+      type: object
+      description: Validates the 6-digit code sent to the user during registration.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 6
+      required:
+      - email
+      - otp
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        question:
+          type: string
+          maxLength: 300
+        answer:
+          type: string
+        display_order:
+          type: integer
+      required:
+      - answer
+      - id
+      - question
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+    GrowthPlan:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 20
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          maxLength: 50
+        abilities_per_day:
+          type: integer
+        estimated_minutes:
+          type: integer
+      required:
+      - code
+      - name
+    GrowthPlanSelectRequest:
+      type: object
+      properties:
+        growth_plan:
+          type: string
+          minLength: 1
+      required:
+      - growth_plan
+    GuidedJourneyImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        competency:
+          allOf:
+          - $ref: '#/components/schemas/CompetencySummary'
+          readOnly: true
+        before_image:
+          type: string
+          format: uri
+        after_image:
+          type: string
+          format: uri
+        display_order:
+          type: integer
+      required:
+      - after_image
+      - before_image
+      - competency
+      - id
+    JourneyTypeEnum:
+      enum:
+      - AI_RECOMMENDED
+      - CUSTOM
+      type: string
+      description: |-
+        * `AI_RECOMMENDED` - AI recommended
+        * `CUSTOM` - Custom
+    LegalDocument:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/LegalDocumentTypeEnum'
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        version:
+          type: string
+          maxLength: 20
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - content
+      - published_at
+      - title
+      - type
+    LegalDocumentTypeEnum:
+      enum:
+      - PRIVACY_POLICY
+      - TERMS_OF_SERVICE
+      type: string
+      description: |-
+        * `PRIVACY_POLICY` - Privacy Policy
+        * `TERMS_OF_SERVICE` - Terms of Service
+    LoginRequest:
+      type: object
+      description: Email + password login returning the token pair plus the user payload.
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    LogoutRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    PatchedPrioritiesUpdateRequest:
+      type: object
+      properties:
+        journey_type:
+          $ref: '#/components/schemas/JourneyTypeEnum'
+        priorities:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriorityEntryRequest'
+    PatchedUserProfileRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        full_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 30
+        profile_image:
+          type: string
+          format: binary
+          nullable: true
+        daily_goal_minutes:
+          type: integer
+        growth_plan:
+          type: string
+          minLength: 1
+          nullable: true
+        practice_time:
+          type: string
+          minLength: 1
+          nullable: true
+    PracticeTimeOption:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 20
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          maxLength: 50
+        start_time:
+          type: string
+          format: time
+          nullable: true
+        end_time:
+          type: string
+          format: time
+          nullable: true
+        is_fixed:
+          type: boolean
+          description: Flexible options have no fixed window.
+      required:
+      - code
+      - name
+    PracticeTimeSelectRequest:
+      type: object
+      properties:
+        practice_time:
+          type: string
+          minLength: 1
+      required:
+      - practice_time
+    PriorityEntryRequest:
+      type: object
+      properties:
+        competency:
+          type: string
+          minLength: 1
+        priority:
+          type: integer
+          minimum: 1
+      required:
+      - competency
+      - priority
+    Register:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        full_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 30
+      required:
+      - email
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        full_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 30
+        session_uuid:
+          type: string
+          format: uuid
+          writeOnly: true
+          nullable: true
+          description: Anonymous onboarding session to attach to the new account.
+      required:
+      - email
+      - password
+    ResetPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 6
+        new_password:
+          type: string
+          minLength: 1
+      required:
+      - email
+      - new_password
+      - otp
+    Resource:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+        competency:
+          type: string
+          readOnly: true
+        file:
+          type: string
+          format: uri
+          nullable: true
+        url:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        thumbnail:
+          type: string
+          format: uri
+          nullable: true
+        is_favorited:
+          type: boolean
+          readOnly: true
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - competency
+      - created_at
+      - id
+      - is_favorited
+      - title
+      - type
+    ResourceTypeEnum:
+      enum:
+      - VIDEO
+      - AUDIO
+      - ARTICLE
+      type: string
+      description: |-
+        * `VIDEO` - Video
+        * `AUDIO` - Audio
+        * `ARTICLE` - Article
+    SessionState:
+      type: object
+      properties:
+        session_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/SessionStateStatusEnum'
+        journey_type:
+          $ref: '#/components/schemas/JourneyTypeEnum'
+        growth_plan:
+          type: string
+          readOnly: true
+        practice_time:
+          type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssessmentResult'
+          readOnly: true
+      required:
+      - growth_plan
+      - practice_time
+      - results
+      - session_uuid
+    SessionStateStatusEnum:
+      enum:
+      - ACTIVE
+      - CLAIMED
+      - EXPIRED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `CLAIMED` - Claimed
+        * `EXPIRED` - Expired
+    SubscriptionPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        code:
+          type: string
+          maxLength: 30
+          pattern: ^[-a-zA-Z0-9_]+$
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        features: {}
+        billing_period:
+          $ref: '#/components/schemas/BillingPeriodEnum'
+      required:
+      - code
+      - id
+      - name
+    SupportRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        subject:
+          type: string
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        message:
+          type: string
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SupportStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - message
+      - status
+      - subject
+    SupportRequestRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        message:
+          type: string
+          minLength: 1
+        attachment:
+          type: string
+          format: binary
+          writeOnly: true
+          nullable: true
+      required:
+      - email
+      - message
+      - subject
+    SupportStatusEnum:
+      enum:
+      - OPEN
+      - IN_PROGRESS
+      - RESOLVED
+      - CLOSED
+      type: string
+      description: |-
+        * `OPEN` - Open
+        * `IN_PROGRESS` - In progress
+        * `RESOLVED` - Resolved
+        * `CLOSED` - Closed
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+          title: Email address
+        full_name:
+          type: string
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - email
+      - full_name
+      - id
+    UserProfile:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 30
+        profile_image:
+          type: string
+          format: uri
+          nullable: true
+        daily_goal_minutes:
+          type: integer
+        growth_plan:
+          type: string
+          nullable: true
+        practice_time:
+          type: string
+          nullable: true
+    UserReminder:
+      type: object
+      properties:
+        reminder_time:
+          type: string
+          format: time
+          nullable: true
+        repeat_days:
+          description: Day codes, e.g. ["MON", "WED", "FRI"].
+        is_active:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - updated_at
+    UserReminderRequest:
+      type: object
+      properties:
+        reminder_time:
+          type: string
+          format: time
+          nullable: true
+        repeat_days:
+          description: Day codes, e.g. ["MON", "WED", "FRI"].
+        is_active:
+          type: boolean
+    UserSubscription:
+      type: object
+      properties:
+        plan:
+          allOf:
+          - $ref: '#/components/schemas/SubscriptionPlan'
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/UserSubscriptionStatusEnum'
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        auto_renew:
+          type: boolean
+      required:
+      - plan
+      - started_at
+    UserSubscriptionStatusEnum:
+      enum:
+      - ACTIVE
+      - EXPIRED
+      - CANCELLED
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `EXPIRED` - Expired
+        * `CANCELLED` - Cancelled
+    VerifyOTPRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+          maxLength: 6
+      required:
+      - email
+      - otp
+    WeeklyCheckIn:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        week_number:
+          type: integer
+        answers: {}
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - completed_at
+      - id
+      - week_number
+    WeeklyCheckInRequest:
+      type: object
+      properties:
+        week_number:
+          type: integer
+        answers: {}
+      required:
+      - week_number
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Authentication
+  description: Registration, login, tokens, and password management.
+- name: Profile & Account
+  description: User profile and account settings.
+- name: Onboarding
+  description: Anonymous onboarding and assessment flow.
+- name: Abilities
+  description: Emotional-intelligence ability catalog.
+- name: Journey
+  description: Personalized guided journey.
+- name: Learning
+  description: Daily learning sessions, reflections, and check-ins.
+- name: Progress
+  description: Dashboard and progress tracking.
+- name: Resources
+  description: Resource library and favorites.
+- name: Notifications
+  description: Reminder preferences.
+- name: Subscriptions
+  description: Subscription plans and status.
+- name: Support
+  description: Help and frequently asked questions.
+- name: Feedback
+  description: User feedback and support requests.
+- name: Legal
+  description: Privacy policy and terms of service.
