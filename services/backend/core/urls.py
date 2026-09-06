@@ -30,6 +30,7 @@ api_v1_patterns = [
     path("", include("Apps.feedback.urls")),
     path("", include("Apps.legal.urls")),
     path("", include("Apps.resources.urls")),
+    path("ai/", include("Apps.ai.urls")),
 ]
 
 class SwaggerJsonDownloadView(SpectacularJSONAPIView):
