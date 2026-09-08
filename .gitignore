@@ -1,1 +1,4 @@
 .env
+eqi30-ec2-key.pem
+setup_infrastructure.sh
+set_github_secrets.sh
