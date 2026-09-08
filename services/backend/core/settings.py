@@ -196,8 +196,8 @@ SIMPLE_JWT = {
 # drf-spectacular (Swagger / OpenAPI 3.0)
 # ---------------------------------------------------------------------------
 SPECTACULAR_SETTINGS = {
-    "TITLE": "EQi30 API",
-    "DESCRIPTION": "REST API documentation for the EQi30 backend. Made by Mehedi Hasan Mridul.",
+    "TITLE": "EQi30 API - Made by Mehedi Hasan Mridul",
+    "DESCRIPTION": "REST API documentation for the EQi30 backend.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,  # hide the raw schema endpoint from the docs list
     "COMPONENT_SPLIT_REQUEST": True,
