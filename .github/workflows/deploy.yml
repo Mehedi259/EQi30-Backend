@@ -95,6 +95,9 @@ jobs:
             # Temporarily replace image name in docker-compose if using a custom image tag
             sed -i "s|image: eqi30-backend:latest|image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest|g" docker-compose.yml
             
+            # Fix env_file path for EC2
+            sed -i "s|./services/backend/.env|.env|g" docker-compose.yml
+            
             # Stop existing containers and restart
             docker-compose down
             docker-compose up -d
