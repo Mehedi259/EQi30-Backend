@@ -30,5 +30,5 @@ COPY . .
 # Expose the port Gunicorn will run on
 EXPOSE 8000
 
-# Command to run the application using Gunicorn
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Command to run the application using Gunicorn via uv
+CMD ["uv", "run", "gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
