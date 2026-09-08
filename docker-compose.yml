@@ -2,8 +2,6 @@ version: "3.8"
 
 services:
   backend:
-    build: 
-      context: ./services/backend
     image: eqi30-backend:latest
     container_name: eqi30_backend
     restart: always
