@@ -23,7 +23,7 @@ class AssessmentAnalyzeView(APIView):
     """
     # Assuming we want it accessible by standard users, or AllowAny for internal tasks.
     # We will use IsAuthenticated since the frontend makes these requests now.
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     async def post(self, request, *args, **kwargs):
         try:
@@ -49,7 +49,7 @@ class JourneyRecommendView(APIView):
     POST /api/v1/ai/journey/recommend
     Recommends a personalized learning journey based on assessment scores.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     async def post(self, request, *args, **kwargs):
         try:
@@ -74,7 +74,7 @@ class ChatRespondView(APIView):
     POST /api/v1/ai/chat/respond
     Provides conversational coaching.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     async def post(self, request, *args, **kwargs):
         try:
