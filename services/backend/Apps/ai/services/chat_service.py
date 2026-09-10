@@ -200,5 +200,32 @@ class ChatService:
             metadata={"safety_stage": stage},
         )
 
+    async def analyze_chat_for_assessment(
+        self,
+        history: list,
+    ) -> dict:
+        """Analyze chat history to generate an EQ assessment."""
+        
+        system_prompt = (
+            "You are an expert EQ evaluator. Review the user's chat history and evaluate their emotional intelligence.\n"
+            "You must assign a score between 0 and 100 for each of these 6 competencies:\n"
+            "SELF_MANAGEMENT, INTERPERSONAL_MANAGEMENT, STRESS_MANAGEMENT, SPIRIT_MANAGEMENT, EXECUTIVE_FUNCTION, DECISION_MAKING.\n"
+            "You must also assign an ai_priority rank from 1 to 6 for these competencies (1 being the most urgent area for growth).\n"
+            "You MUST output strictly in the following JSON format:\n"
+            '{"results": [{"competency": "SELF_MANAGEMENT", "score": 65.0, "ai_priority": 1}, ...]}'
+        )
+        
+        messages = [LLMMessage(role="system", content=system_prompt)]
+        
+        for msg in history:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant", "system"):
+                messages.append(LLMMessage(role=role, content=content))
+        
+        result = await self._provider.complete_json(messages)
+        return result.structured or {}
+
+
 
 __all__ = ["ChatService", "DEFAULT_LOCALE"]
