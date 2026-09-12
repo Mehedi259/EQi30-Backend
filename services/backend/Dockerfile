@@ -27,6 +27,9 @@ RUN uv sync --frozen
 # Copy the entire project
 COPY . .
 
+# Collect static files
+RUN uv run python manage.py collectstatic --noinput
+
 # Expose the port Gunicorn will run on
 EXPOSE 8000
 
