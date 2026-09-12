@@ -8,23 +8,18 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./services/backend/.env
-    # Optional: If you want to use PostgreSQL instead of SQLite, uncomment the below depends_on section and the db service
-    # depends_on:
-    #   - db
-    
-  # db:
-  #   image: postgres:15-alpine
-  #   container_name: eqi30_db
-  #   restart: always
-  #   environment:
-  #     POSTGRES_USER: eqi30_user
-  #     POSTGRES_PASSWORD: your_strong_password
-  #     POSTGRES_DB: eqi30_db
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
+      - .env
+    volumes:
+      - sqlite_data:/app/data
+    command: >
+      sh -c "
+        mkdir -p /app/data &&
+        cp -n /app/db.sqlite3 /app/data/db.sqlite3 2>/dev/null || true &&
+        ln -sf /app/data/db.sqlite3 /app/db.sqlite3 2>/dev/null || true &&
+        uv run python manage.py migrate --noinput &&
+        uv run python manage.py seed_eqi30 &&
+        uv run gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3
+      "
 
-# volumes:
-#   postgres_data:
+volumes:
+  sqlite_data:

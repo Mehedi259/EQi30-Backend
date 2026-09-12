@@ -102,5 +102,18 @@ jobs:
             docker-compose down
             docker-compose up -d
             
+            # Wait for container to be ready
+            sleep 15
+            
+            # Create superuser if it doesn't exist
+            docker exec eqi30_backend uv run python manage.py shell -c "
+from Apps.users.models import User
+if not User.objects.filter(email='admin@eqi30.app').exists():
+    User.objects.create_superuser(email='admin@eqi30.app', password='admin')
+    print('Superuser created.')
+else:
+    print('Superuser already exists.')
+"
+            
             # Clean up old unused images
             docker image prune -af
