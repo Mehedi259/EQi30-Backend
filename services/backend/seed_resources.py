@@ -1,11 +1,11 @@
 import os
 import django
 import urllib.request
-from django.core.files.base import ContentFile
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
+from django.conf import settings
 from Apps.resources.models import Resource
 
 def download_file(url):
@@ -14,8 +14,9 @@ def download_file(url):
         return response.read()
 
 def seed():
-    print("Clearing existing resources...")
-    Resource.objects.all().delete()
+    if Resource.objects.exists():
+        print("Resources already exist. Skipping seeding.")
+        return
 
     # Public domain / free sample files for testing
     audio_url = "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3"
@@ -105,9 +106,20 @@ def seed():
         },
     ]
 
+    # Ensure the media/resources directory exists
+    media_resources_dir = os.path.join(settings.MEDIA_ROOT, "resources")
+    os.makedirs(media_resources_dir, exist_ok=True)
+
     for data in resources_data:
         print(f"Creating {data['title']}...")
-        r = Resource.objects.create(
+        file_path = os.path.join(media_resources_dir, data["file_name"])
+
+        # Write file DIRECTLY to disk to avoid Django adding a random suffix
+        with open(file_path, "wb") as f:
+            f.write(data["file_content"])
+
+        # Create the DB record and set file.name directly (no upload via .save())
+        r = Resource(
             title=data["title"],
             subtitle=data.get("subtitle", ""),
             category=data["category"],

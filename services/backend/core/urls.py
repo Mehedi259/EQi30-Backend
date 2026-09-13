@@ -61,5 +61,10 @@ urlpatterns = [
     path('', redirect_to_docs, name='root-redirect'),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+from django.views.static import serve
+import re
+
+# Serve media files (works in both development and production)
+urlpatterns += [
+    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+]
