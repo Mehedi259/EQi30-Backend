@@ -18,8 +18,13 @@ class ResourceSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "subtitle",
             "description",
             "type",
+            "category",
+            "duration_minutes",
+            "difficulty_level",
+            "is_featured",
             "competency",
             "file",
             "url",
@@ -30,7 +35,7 @@ class ResourceSerializer(serializers.ModelSerializer):
 
 
 class ResourceListView(generics.ListAPIView):
-    """Resources library. Filters: ?type=VIDEO&competency=<code>&favorites=true"""
+    """Resources library. Filters: ?type=VIDEO&category=MEDITATION&is_featured=true"""
 
     serializer_class = ResourceSerializer
 
@@ -45,6 +50,10 @@ class ResourceListView(generics.ListAPIView):
         params = self.request.query_params
         if params.get("type"):
             qs = qs.filter(type=params["type"].upper())
+        if params.get("category"):
+            qs = qs.filter(category=params["category"].upper())
+        if params.get("is_featured") in ("true", "1"):
+            qs = qs.filter(is_featured=True)
         if params.get("competency"):
             qs = qs.filter(competency__code=params["competency"])
         if params.get("favorites") in ("true", "1"):

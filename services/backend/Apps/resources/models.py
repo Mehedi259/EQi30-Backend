@@ -12,9 +12,25 @@ class Resource(models.Model):
         AUDIO = "AUDIO", "Audio"
         ARTICLE = "ARTICLE", "Article"
 
+    class ResourceCategory(models.TextChoices):
+        MEDITATION = "MEDITATION", "Meditation"
+        YOGA = "YOGA", "Yoga"
+        ARTICLE = "ARTICLE", "Article"
+        JOURNEY = "JOURNEY", "Journey"
+
+    class DifficultyLevel(models.TextChoices):
+        BEGINNER = "BEGINNER", "Beginner"
+        INTERMEDIATE = "INTERMEDIATE", "Intermediate"
+        ADVANCED = "ADVANCED", "Advanced"
+
     title = models.CharField(max_length=200)
+    subtitle = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True)
     type = models.CharField(max_length=10, choices=ResourceType.choices)
+    category = models.CharField(max_length=20, choices=ResourceCategory.choices, default=ResourceCategory.MEDITATION)
+    duration_minutes = models.PositiveIntegerField(null=True, blank=True)
+    difficulty_level = models.CharField(max_length=20, choices=DifficultyLevel.choices, null=True, blank=True)
+    is_featured = models.BooleanField(default=False)
     competency = models.ForeignKey(
         Competency,
         on_delete=models.SET_NULL,
