@@ -234,7 +234,7 @@ def _icon_url(obj):
 
 def journey_overview(user):
     """The six competency sections in the exact personalized order."""
-    journey = ensure_journey(user)
+    journey = refresh_journey_day(ensure_journey(user))
     completed_ability_ids = set(
         UserDailySession.objects.filter(
             user=user, status=UserDailySession.Status.COMPLETED
@@ -242,8 +242,19 @@ def journey_overview(user):
     )
     priorities = get_priority_map(user, journey)
 
+    from django.db.models import Max
+    from Apps.learning.models import AbilityDayContent
+
+    sessions = UserDailySession.objects.filter(user=user, status=UserDailySession.Status.COMPLETED)
+    ability_stats = { stat['ability']: stat for stat in sessions.values('ability').annotate(
+        current_day=Max('content_day'),
+        last_completed=Max('completed_at')
+    )}
+
     sections = []
     total = done = 0
+    active_abilities = []
+    
     for index, competency in enumerate(ordered_competencies(user, journey), start=1):
         abilities = []
         for ability in sorted(
@@ -254,6 +265,19 @@ def journey_overview(user):
             total += 1
             completed = ability.id in completed_ability_ids
             done += completed
+            
+            if ability.id in ability_stats:
+                stat = ability_stats[ability.id]
+                current_day = stat['current_day']
+                total_days = AbilityDayContent.objects.filter(ability_id=ability.id).aggregate(total=Max('day_number'))['total'] or 1
+                if current_day < total_days:
+                    active_abilities.append({
+                        "name": ability.name,
+                        "proficiency": round((current_day / total_days) * 100),
+                        "icon": _icon_url(ability),
+                        "last_completed": stat['last_completed']
+                    })
+                    
             abilities.append(
                 {
                     "id": ability.id,
@@ -276,11 +300,38 @@ def journey_overview(user):
                 "abilities": abilities,
             }
         )
+        
+    active_abilities.sort(key=lambda x: x['last_completed'] or timezone.now(), reverse=True)
+    for a in active_abilities:
+        a.pop('last_completed', None)
+    active_abilities = active_abilities[:3]
+
+    pace = get_pace(user)
+    ordered_abs = ordered_abilities(user, journey)
+    slots = day_slots(journey, pace, ordered_abs, journey.current_day)
+    current_focus = None
+    if slots:
+        focus_ability, _ = slots[0]
+        messages = [
+            f"Keep up the momentum! You're already identifying patterns faster than 60% of new learners.",
+            f"Consistency is key. You're doing great with {focus_ability.name}.",
+            f"Building {focus_ability.name} takes time, but you're making steady progress!"
+        ]
+        import random
+        message = messages[(journey.current_day - 1) % len(messages)]
+        
+        current_focus = {
+            "day": journey.current_day,
+            "ability_name": focus_ability.name,
+            "message": message
+        }
 
     return {
         "journey": _journey_meta(journey),
         "overall_progress_percent": round(done / total * 100) if total else 0,
         "sections": sections,
+        "active_abilities": active_abilities,
+        "current_focus": current_focus,
     }
 
 

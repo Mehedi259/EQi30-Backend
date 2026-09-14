@@ -202,3 +202,67 @@ class JourneyHistoryView(APIView):
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     def get(self, request):
         return Response(services.journey_history(request.user))
+
+
+class PreviousJourneyAbilitiesView(APIView):
+    """Abilities grouped into IN PROGRESS and COMPLETED for the Previous Journey screen."""
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request):
+        user = request.user
+        
+        from django.db.models import Max
+        from django.utils import timezone
+        from Apps.learning.models import UserDailySession, AbilityDayContent
+        from Apps.abilities.models import Ability
+        from Apps.journey.services import _icon_url
+        
+        sessions = UserDailySession.objects.filter(user=user, status=UserDailySession.Status.COMPLETED)
+        
+        ability_stats = sessions.values('ability').annotate(
+            current_day=Max('content_day'),
+            last_completed=Max('completed_at')
+        )
+        
+        ability_ids = [stat['ability'] for stat in ability_stats]
+        abilities = Ability.objects.filter(id__in=ability_ids).select_related('competency')
+        
+        content_counts = AbilityDayContent.objects.filter(ability_id__in=ability_ids).values('ability').annotate(total=Max('day_number'))
+        total_days_map = {c['ability']: c['total'] for c in content_counts}
+        
+        ability_map = {a.id: a for a in abilities}
+        
+        in_progress = []
+        completed = []
+        
+        for stat in ability_stats:
+            ab_id = stat['ability']
+            ability = ability_map.get(ab_id)
+            if not ability:
+                continue
+                
+            current_day = stat['current_day']
+            total_days = total_days_map.get(ab_id, 1)
+            
+            data = {
+                "id": ability.id,
+                "name": ability.name,
+                "icon": _icon_url(ability),
+                "current_day": current_day,
+                "total_days": total_days,
+                "progress_percent": round((current_day / total_days) * 100) if total_days else 0,
+                "completed_at": stat['last_completed']
+            }
+                
+            if current_day >= total_days:
+                completed.append(data)
+            else:
+                in_progress.append(data)
+                
+        in_progress.sort(key=lambda x: x['completed_at'] or timezone.now(), reverse=True)
+        completed.sort(key=lambda x: x['completed_at'] or timezone.now(), reverse=True)
+        
+        return Response({
+            "in_progress": in_progress,
+            "completed": completed
+        })
