@@ -306,6 +306,14 @@ def journey_overview(user):
         a.pop('last_completed', None)
     active_abilities = active_abilities[:3]
 
+    if not active_abilities:
+        for ability in ordered_abilities(user, journey)[:3]:
+            active_abilities.append({
+                "name": ability.name,
+                "proficiency": 0,
+                "icon": _icon_url(ability)
+            })
+
     pace = get_pace(user)
     ordered_abs = ordered_abilities(user, journey)
     slots = day_slots(journey, pace, ordered_abs, journey.current_day)
