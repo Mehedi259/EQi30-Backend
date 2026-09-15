@@ -133,6 +133,12 @@ def main():
                         practice_content=day['practice_content'],
                         real_life_plan=day['real_life_plan'],
                         reflection_question=day['reflection_question'],
+                        practice_options=[
+                            {"emoji": "😌", "label": "More calm"},
+                            {"emoji": "🧠", "label": "More clear"},
+                            {"emoji": "🎯", "label": "More focused"},
+                            {"emoji": "⏳", "label": "No change yet"}
+                        ],
                         estimated_minutes=5
                     )
                 )
