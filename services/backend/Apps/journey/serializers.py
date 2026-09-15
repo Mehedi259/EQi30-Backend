@@ -41,6 +41,9 @@ class SessionStateSerializer(serializers.ModelSerializer):
             "journey_type",
             "growth_plan",
             "practice_time",
+            "daily_reminder_enabled",
+            "miss_day_nudge_enabled",
+            "calendar_sync_enabled",
             "expires_at",
             "results",
         ]
@@ -125,6 +128,9 @@ class PracticeTimeSelectSerializer(serializers.Serializer):
     practice_time = serializers.SlugRelatedField(
         slug_field="code", queryset=PracticeTimeOption.objects.all()
     )
+    daily_reminder_enabled = serializers.BooleanField(default=True)
+    miss_day_nudge_enabled = serializers.BooleanField(default=True)
+    calendar_sync_enabled = serializers.BooleanField(default=False)
 
 
 class GuidedJourneyImageSerializer(serializers.ModelSerializer):

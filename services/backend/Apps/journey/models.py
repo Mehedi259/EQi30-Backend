@@ -106,6 +106,10 @@ class AnonymousOnboardingSession(models.Model):
     practice_time = models.ForeignKey(
         PracticeTimeOption, on_delete=models.SET_NULL, null=True, blank=True
     )
+    daily_reminder_enabled = models.BooleanField(default=True)
+    miss_day_nudge_enabled = models.BooleanField(default=True)
+    calendar_sync_enabled = models.BooleanField(default=False)
+    
     expires_at = models.DateTimeField(default=default_session_expiry)
     created_at = models.DateTimeField(auto_now_add=True)
 

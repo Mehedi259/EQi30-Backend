@@ -8,6 +8,14 @@ class Competency(models.Model):
     code = models.SlugField(max_length=50, unique=True)
     description = models.TextField(blank=True)
     icon = models.ImageField(upload_to="competencies/icons/", null=True, blank=True)
+    what_it_is = models.TextField(blank=True)
+    why_it_matters = models.TextField(blank=True)
+    what_you_will_do = models.TextField(blank=True)
+    what_you_will_learn = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="List of strings describing what the user will learn"
+    )
     display_order = models.PositiveSmallIntegerField(
         default=0, help_text="Fallback order when the user has no personalized priority."
     )

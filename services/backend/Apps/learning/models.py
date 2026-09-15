@@ -18,6 +18,12 @@ class AbilityDayContent(models.Model):
     practice_content = models.TextField(blank=True)
     real_life_plan = models.TextField(blank=True)
     reflection_question = models.TextField(blank=True)
+    key_concept = models.TextField(blank=True, help_text="The key concept text, e.g. 'Key Concept: Granularity...'")
+    practice_options = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="List of strings for feeling chips, e.g. ['Calm', 'Annoyed']"
+    )
     estimated_minutes = models.PositiveSmallIntegerField(default=5)
 
     class Meta:

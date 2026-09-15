@@ -150,7 +150,15 @@ class OnboardingPracticeTimeView(APIView):
         serializer = PracticeTimeSelectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         session.practice_time = serializer.validated_data["practice_time"]
-        session.save(update_fields=["practice_time"])
+        session.daily_reminder_enabled = serializer.validated_data["daily_reminder_enabled"]
+        session.miss_day_nudge_enabled = serializer.validated_data["miss_day_nudge_enabled"]
+        session.calendar_sync_enabled = serializer.validated_data["calendar_sync_enabled"]
+        session.save(update_fields=[
+            "practice_time", 
+            "daily_reminder_enabled", 
+            "miss_day_nudge_enabled", 
+            "calendar_sync_enabled"
+        ])
         return Response(SessionStateSerializer(session).data)
 
 

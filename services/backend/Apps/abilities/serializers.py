@@ -14,7 +14,11 @@ class CompetencySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Competency
-        fields = ["id", "name", "code", "description", "icon", "display_order", "abilities"]
+        fields = [
+            "id", "name", "code", "description", "icon", 
+            "what_it_is", "why_it_matters", "what_you_will_do", "what_you_will_learn",
+            "display_order", "abilities"
+        ]
 
     def get_abilities(self, obj):
         qs = obj.abilities.filter(is_active=True)

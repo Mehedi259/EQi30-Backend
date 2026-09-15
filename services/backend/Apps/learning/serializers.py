@@ -21,6 +21,8 @@ class AbilityDayContentSerializer(serializers.ModelSerializer):
             "practice_content",
             "real_life_plan",
             "reflection_question",
+            "key_concept",
+            "practice_options",
             "estimated_minutes",
         ]
 

@@ -69,7 +69,16 @@ def claim_onboarding_session(session_uuid, user):
     profile = user.profile
     profile.growth_plan = session.growth_plan
     profile.practice_time = session.practice_time
-    profile.save(update_fields=["growth_plan", "practice_time"])
+    profile.daily_reminder_enabled = session.daily_reminder_enabled
+    profile.miss_day_nudge_enabled = session.miss_day_nudge_enabled
+    profile.calendar_sync_enabled = session.calendar_sync_enabled
+    profile.save(update_fields=[
+        "growth_plan", 
+        "practice_time", 
+        "daily_reminder_enabled", 
+        "miss_day_nudge_enabled", 
+        "calendar_sync_enabled"
+    ])
 
     if not user.journeys.exclude(status=UserJourney.Status.COMPLETED).exists():
         UserJourney.objects.create(user=user, journey_type=session.journey_type)

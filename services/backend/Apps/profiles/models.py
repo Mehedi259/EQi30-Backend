@@ -28,6 +28,9 @@ class UserProfile(models.Model):
         blank=True,
         related_name="profiles",
     )
+    daily_reminder_enabled = models.BooleanField(default=True)
+    miss_day_nudge_enabled = models.BooleanField(default=True)
+    calendar_sync_enabled = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
