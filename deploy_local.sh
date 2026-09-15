@@ -33,6 +33,7 @@ ssh -o StrictHostKeyChecking=no -i ${KEY_FILE} ubuntu@${EC2_IP} << 'EOF'
   
   echo "Running database seeding..."
   docker exec eqi30_backend uv run python seed_resources.py
+  docker exec eqi30_backend uv run python seed_competency.py
   
   echo "Deployment complete!"
 EOF
