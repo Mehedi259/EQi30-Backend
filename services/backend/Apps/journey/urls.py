@@ -18,4 +18,5 @@ urlpatterns = [
     path("journey/today/", views.JourneyTodayView.as_view(), name="journey-today"),
     path("journey/history/", views.JourneyHistoryView.as_view(), name="journey-history"),
     path("journey/previous-abilities/", views.PreviousJourneyAbilitiesView.as_view(), name="journey-previous-abilities"),
+    path("journey/abilities/<int:ability_id>/history/", views.PreviousJourneyAbilityDetailsView.as_view(), name="journey-ability-history"),
 ]

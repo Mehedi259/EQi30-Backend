@@ -274,3 +274,36 @@ class PreviousJourneyAbilitiesView(APIView):
             "in_progress": in_progress,
             "completed": completed
         })
+
+
+class PreviousJourneyAbilityDetailsView(APIView):
+    """Details of a specific ability's history (sessions and reflections) for the user."""
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request, ability_id):
+        from Apps.learning.models import UserDailySession
+        
+        sessions = UserDailySession.objects.filter(
+            user=request.user, 
+            ability_id=ability_id, 
+            status=UserDailySession.Status.COMPLETED
+        ).select_related('reflection').order_by('-completed_at')
+        
+        history = []
+        for session in sessions:
+            reflection_data = None
+            if hasattr(session, 'reflection'):
+                reflection_data = {
+                    "response": session.reflection.response,
+                    "reflection_text": session.reflection.reflection_text,
+                    "created_at": session.reflection.created_at
+                }
+                
+            history.append({
+                "session_id": session.id,
+                "content_day": session.content_day,
+                "completed_at": session.completed_at,
+                "reflection": reflection_data
+            })
+            
+        return Response({"history": history})
