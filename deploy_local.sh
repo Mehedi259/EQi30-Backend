@@ -7,6 +7,9 @@ KEY_FILE="eqi30-ec2-key.pem"
 echo "Copying source code to EC2..."
 rsync -avz --exclude '.venv' --exclude 'venv_new' --exclude '__pycache__' --exclude '*.sqlite3' -e "ssh -o StrictHostKeyChecking=no -i ${KEY_FILE}" ./services/backend/ ubuntu@${EC2_IP}:~/eqi30-backend-src/
 
+echo "Copying docker-compose.yml and nginx.conf to EC2..."
+rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ${KEY_FILE}" ./docker-compose.yml ./nginx.conf ubuntu@${EC2_IP}:~/eqi30/
+
 echo "Connecting to EC2 to build and deploy..."
 ssh -o StrictHostKeyChecking=no -i ${KEY_FILE} ubuntu@${EC2_IP} << 'EOF'
   set -e

@@ -5,12 +5,14 @@ services:
     image: eqi30-backend:latest
     container_name: eqi30_backend
     restart: always
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     env_file:
       - .env
     volumes:
       - sqlite_data:/app/data
+      - media_data:/app/media
+      - static_data:/app/staticfiles
     command: >
       sh -c "
         mkdir -p /app/data &&
@@ -21,5 +23,20 @@ services:
         uv run gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 3
       "
 
+  nginx:
+    image: nginx:alpine
+    container_name: eqi30_nginx
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - media_data:/app/media:ro
+      - static_data:/app/staticfiles:ro
+    depends_on:
+      - backend
+
 volumes:
   sqlite_data:
+  media_data:
+  static_data:
