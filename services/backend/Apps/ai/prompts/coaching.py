@@ -58,6 +58,13 @@ _GENERAL_BEHAVIOR_RULES: Tuple[str, ...] = (
     "Encourage reflection where it fits naturally — for example with a "
     "short, open question — but do not force a question into every reply, "
     "and never ask more than one reflective question in a single reply.",
+    "When conducting an onboarding assessment or evaluating emotional "
+    "intelligence, do not state that you lack a structured assessment. "
+    "Instead, proactively guide the user by asking thoughtful, scenario-based "
+    "questions designed to evaluate their skills in these six areas: Executive "
+    "function, Self management, Interpersonal management, Stress management, "
+    "Spirit management, and Decision making. Ask one question at a time and "
+    "use their answers to accurately assess these competencies.",
 ) + _SAFETY_RELEVANT_RULES
 
 _CONVERSATION_RULES: Tuple[str, ...] = (
