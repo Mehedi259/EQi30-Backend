@@ -52,20 +52,38 @@ class Competency(BaseModel):
 # ---------------------------------------------------------------------------
 # Canonical records
 # ---------------------------------------------------------------------------
-#
-# PENDING APPROVED SPECIFICATION.
-#
-# The six canonical competencies are defined by the approved EQi-30 project
-# specification, which has not been supplied to this repository (docs/ are
-# empty). Populating this tuple with invented competencies would fabricate the
-# product's canonical taxonomy, which CLAUDE.md forbids.
-#
-# To complete the taxonomy, add the six approved Competency records below.
-# Every invariant (count, uniqueness, referential integrity with abilities) is
-# already enforced and tested, so a malformed or incomplete drop-in fails
-# immediately and loudly rather than silently propagating.
-#
-COMPETENCY_RECORDS: Tuple[Competency, ...] = ()
+COMPETENCY_RECORDS: Tuple[Competency, ...] = (
+    Competency(
+        code="SELF_MANAGEMENT",
+        name="Self-Management",
+        description="The operational engine of your inner life: understanding, regulating, and directing your personal emotional states, boundaries, and intrinsic potential.",
+    ),
+    Competency(
+        code="INTERPERSONAL_MANAGEMENT",
+        name="Interpersonal Management",
+        description="The bridge to the outside world: building constructive relationships, communicating effectively, navigating conflicts, and empathizing with others.",
+    ),
+    Competency(
+        code="STRESS_MANAGEMENT",
+        name="Stress Management",
+        description="Your shock absorber in an unpredictable world: withstanding pressure, maintaining emotional balance, adapting thinking flexibly, and staying resilient.",
+    ),
+    Competency(
+        code="SPIRIT_MANAGEMENT",
+        name="Spirit Management",
+        description="Your internal compass and vitality engine: connecting with purpose, maintaining authentic energy, cultivating community, and finding meaning.",
+    ),
+    Competency(
+        code="EXECUTIVE_FUNCTION",
+        name="Executive Function",
+        description="The CEO of your mind: planning, prioritizing, focusing attention, sustaining motivation, and organizing daily life into tangible action.",
+    ),
+    Competency(
+        code="DECISION_MAKING",
+        name="Decision Making",
+        description="Your reality-testing apparatus: evaluating circumstances objectively, regulating impulses, conceptualizing ideas, and solving complex problems.",
+    ),
+)
 
 
 __all__ = [

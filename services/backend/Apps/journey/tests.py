@@ -247,3 +247,20 @@ class OnboardingToJourneyFlowTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_assessment_submission_with_raw_answers(self):
+        session_uuid = self.create_session()
+        payload = {
+            "answers": [
+                {"item_id": i, "value": 8.0}
+                for i in range(1, 104)
+            ]
+        }
+        response = self.client.post(
+            f"/api/v1/onboarding/{session_uuid}/assessment/", payload, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(response.data["results"]), 6)
+        priorities = {r["ai_priority"] for r in response.data["results"]}
+        self.assertEqual(priorities, {1, 2, 3, 4, 5, 6})
+

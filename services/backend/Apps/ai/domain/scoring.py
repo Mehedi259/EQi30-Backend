@@ -385,6 +385,12 @@ _registry = ScoringStrategyRegistry()
 
 def get_scoring_registry() -> ScoringStrategyRegistry:
     """Return the singleton scoring strategy registry."""
+    if _registry.is_empty:
+        try:
+            from Apps.ai.domain.eqi30_scoring import EQi30ScoringStrategy
+            _registry.register(EQi30ScoringStrategy(), set_default=True)
+        except Exception:
+            pass
     return _registry
 
 

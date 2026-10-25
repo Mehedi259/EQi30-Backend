@@ -83,6 +83,29 @@ class OnboardingAssessmentView(APIView):
         session = get_active_session(session_uuid)
         serializer = AssessmentSubmitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        if serializer.validated_data.get("results"):
+            entries = serializer.validated_data["results"]
+        else:
+            from Apps.abilities.models import Competency
+            from Apps.ai.domain.eqi30_scoring import EQi30ScoringStrategy
+            strategy = EQi30ScoringStrategy()
+            raw_answers = serializer.validated_data["answers"]
+            strategy.validate_input(raw_answers, "eqi30-self-report-v1")
+            computed = strategy.compute_scores(raw_answers, "eqi30-self-report-v1")
+            
+            # Sort ascending by score -> lowest score gets priority 1 (growth area)
+            sorted_comp = sorted(computed, key=lambda c: c.score)
+            active_comp_map = {c.code: c for c in Competency.objects.filter(is_active=True)}
+            entries = []
+            for rank, c_res in enumerate(sorted_comp, start=1):
+                if c_res.competency_code in active_comp_map:
+                    entries.append({
+                        "competency": active_comp_map[c_res.competency_code],
+                        "score": c_res.score,
+                        "ai_priority": rank,
+                    })
+
         with transaction.atomic():
             # A new assessment replaces the previous one entirely.
             session.assessment_results.all().delete()
@@ -93,7 +116,7 @@ class OnboardingAssessmentView(APIView):
                     score=entry["score"],
                     ai_priority=entry["ai_priority"],
                 )
-                for entry in serializer.validated_data["results"]
+                for entry in entries
             )
         return Response(
             SessionStateSerializer(session).data, status=status.HTTP_201_CREATED

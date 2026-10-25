@@ -384,6 +384,26 @@ _instrument_registry = InstrumentRegistry()
 
 def get_instrument_registry() -> InstrumentRegistry:
     """Return the singleton instrument version registry."""
+    if _instrument_registry.is_empty:
+        _instrument_registry.register(
+            InstrumentVersionConfig(
+                version="eqi30-self-report-v1",
+                description="EQi-30 103-item official psychometric self-report instrument",
+                expected_item_count=103,
+                value_min=1.0,
+                value_max=10.0,
+            ),
+            set_default=True,
+        )
+        _instrument_registry.register(
+            InstrumentVersionConfig(
+                version="eqi30-jotform-v1",
+                description="EQi-30 JotForm assessment instrument",
+                expected_item_count=103,
+                value_min=1.0,
+                value_max=10.0,
+            ),
+        )
     return _instrument_registry
 
 

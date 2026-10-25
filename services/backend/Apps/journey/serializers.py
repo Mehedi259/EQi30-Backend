@@ -79,10 +79,15 @@ def _validate_full_coverage(entries, priority_key):
 
 
 class AssessmentSubmitSerializer(serializers.Serializer):
-    results = AssessmentEntrySerializer(many=True)
+    results = AssessmentEntrySerializer(many=True, required=False)
+    answers = serializers.ListField(child=serializers.DictField(), required=False)
 
-    def validate_results(self, value):
-        return _validate_full_coverage(value, "ai_priority")
+    def validate(self, attrs):
+        if not attrs.get("results") and not attrs.get("answers"):
+            raise serializers.ValidationError("Either 'results' or 'answers' must be provided.")
+        if attrs.get("results"):
+            _validate_full_coverage(attrs["results"], "ai_priority")
+        return attrs
 
 
 class PriorityEntrySerializer(serializers.Serializer):
