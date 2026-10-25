@@ -51,8 +51,6 @@ LOCAL_APPS = [
     'Apps.learning',
     'Apps.progress',
     'Apps.resources',
-    'Apps.meditation',
-    'Apps.yoga',
     'Apps.notifications',
     'Apps.subscriptions',
     'Apps.support',

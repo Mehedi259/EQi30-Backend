@@ -1,15 +1,20 @@
-.venv
-venv_new
+.venv*
+venv*
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
 env/
-venv/
 .env
 db.sqlite3
+db.sqlite3-journal
 .pytest_cache/
 .coverage
 htmlcov/
 *.log
+.DS_Store
+*.docx
+*.xlsx
+"Microskills 1-20 "
+"MicroSkills 21-30 Executive functioning and Decision making "
