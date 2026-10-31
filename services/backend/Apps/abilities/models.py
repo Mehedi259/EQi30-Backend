@@ -38,6 +38,14 @@ class Ability(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     icon = models.ImageField(upload_to="abilities/icons/", null=True, blank=True)
+    what_it_is = models.TextField(blank=True)
+    why_it_matters = models.TextField(blank=True)
+    what_you_will_do = models.TextField(blank=True)
+    what_you_will_learn = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of strings describing what the user will learn in this ability journey"
+    )
     default_order = models.PositiveSmallIntegerField(
         default=0, help_text="Order of the ability inside its competency."
     )
