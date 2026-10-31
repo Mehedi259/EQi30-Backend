@@ -15,5 +15,6 @@ urlpatterns = [
     path("auth/resend-otp/", views.ResendOTPView.as_view(), name="auth-resend-otp"),
     path("auth/reset-password/", views.ResetPasswordView.as_view(), name="auth-reset-password"),
     path("auth/change-password/", views.ChangePasswordView.as_view(), name="auth-change-password"),
+    path("auth/social-login/", views.SocialLoginView.as_view(), name="auth-social-login"),
     path("user/account/", views.DeleteAccountView.as_view(), name="user-account"),
 ]

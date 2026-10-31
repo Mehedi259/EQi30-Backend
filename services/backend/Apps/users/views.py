@@ -26,6 +26,7 @@ from .serializers import (
     LogoutSerializer,
     RegisterSerializer,
     ResetPasswordSerializer,
+    SocialLoginSerializer,
     UserSerializer,
     VerifyOTPSerializer,
 )
@@ -241,3 +242,58 @@ class DeleteAccountView(APIView):
         _blacklist_all_tokens(user)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SocialLoginView(APIView):
+    """Authenticate or register a user seamlessly via Google or Apple login."""
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=SocialLoginSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        import secrets
+        serializer = SocialLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        provider = serializer.validated_data["provider"]
+        email = serializer.validated_data["email"].strip().lower()
+        full_name = serializer.validated_data.get("full_name") or f"{provider.capitalize()} User"
+        session_uuid = serializer.validated_data.get("session_uuid")
+
+        from Apps.journey.services import claim_onboarding_session
+
+        user = User.objects.filter(email__iexact=email).first()
+        is_new = False
+        if not user:
+            user = User.objects.create_user(
+                email=email,
+                password=secrets.token_urlsafe(16),
+                is_active=True,
+            )
+            profile = user.profile
+            profile.full_name = full_name
+            profile.save(update_fields=["full_name"])
+            is_new = True
+        elif not user.is_active:
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+
+        onboarding_claimed = False
+        if session_uuid:
+            onboarding_claimed = claim_onboarding_session(session_uuid, user)
+
+        refresh = RefreshToken.for_user(user)
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+                "is_new": is_new,
+                "provider": provider,
+                "onboarding_claimed": onboarding_claimed,
+            },
+            status=status.HTTP_200_OK,
+        )
+

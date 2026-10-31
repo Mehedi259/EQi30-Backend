@@ -195,3 +195,35 @@ class AuthFlowTests(APITestCase):
         delete = self.client.delete("/api/v1/user/account/")
         self.assertEqual(delete.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(User.objects.filter(email="user@example.com").exists())
+
+    def test_social_login_google_creates_user_and_returns_tokens(self):
+        response = self.client.post(
+            "/api/v1/auth/social-login/",
+            {
+                "provider": "google",
+                "email": "google.user@gmail.com",
+                "full_name": "Google Tester",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data["tokens"])
+        self.assertIn("refresh", response.data["tokens"])
+        self.assertTrue(response.data["is_new"])
+        self.assertEqual(response.data["user"]["email"], "google.user@gmail.com")
+        self.assertTrue(User.objects.get(email="google.user@gmail.com").is_active)
+
+    def test_social_login_apple_existing_user_returns_tokens(self):
+        User.objects.create_user(email="apple.user@icloud.com", is_active=True)
+        response = self.client.post(
+            "/api/v1/auth/social-login/",
+            {
+                "provider": "apple",
+                "email": "apple.user@icloud.com",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["is_new"])
+        self.assertIn("access", response.data["tokens"])
+

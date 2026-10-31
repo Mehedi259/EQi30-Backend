@@ -236,8 +236,153 @@ class EQi30ScoringStrategy(ScoringStrategy):
         return results
 
 
+# 48 Items for Short Assessment: (item_id, competency_code, is_reverse)
+EQI30_SHORT_ITEMS: Tuple[Tuple[int, str, bool], ...] = (
+    # --- SELF_MANAGEMENT (Items 1 - 8) ---
+    (1, "SELF_MANAGEMENT", False),
+    (2, "SELF_MANAGEMENT", False),
+    (3, "SELF_MANAGEMENT", False),
+    (4, "SELF_MANAGEMENT", False),
+    (5, "SELF_MANAGEMENT", False),
+    (6, "SELF_MANAGEMENT", False),
+    (7, "SELF_MANAGEMENT", True),
+    (8, "SELF_MANAGEMENT", True),
+
+    # --- INTERPERSONAL_MANAGEMENT (Items 9 - 16) ---
+    (9, "INTERPERSONAL_MANAGEMENT", False),
+    (10, "INTERPERSONAL_MANAGEMENT", False),
+    (11, "INTERPERSONAL_MANAGEMENT", False),
+    (12, "INTERPERSONAL_MANAGEMENT", False),
+    (13, "INTERPERSONAL_MANAGEMENT", False),
+    (14, "INTERPERSONAL_MANAGEMENT", False),
+    (15, "INTERPERSONAL_MANAGEMENT", False),
+    (16, "INTERPERSONAL_MANAGEMENT", True),
+
+    # --- STRESS_MANAGEMENT (Items 17 - 24) ---
+    (17, "STRESS_MANAGEMENT", False),
+    (18, "STRESS_MANAGEMENT", False),
+    (19, "STRESS_MANAGEMENT", False),
+    (20, "STRESS_MANAGEMENT", False),
+    (21, "STRESS_MANAGEMENT", False),
+    (22, "STRESS_MANAGEMENT", False),
+    (23, "STRESS_MANAGEMENT", True),
+    (24, "STRESS_MANAGEMENT", True),
+
+    # --- SPIRIT_MANAGEMENT (Items 25 - 32) ---
+    (25, "SPIRIT_MANAGEMENT", False),
+    (26, "SPIRIT_MANAGEMENT", False),
+    (27, "SPIRIT_MANAGEMENT", False),
+    (28, "SPIRIT_MANAGEMENT", False),
+    (29, "SPIRIT_MANAGEMENT", False),
+    (30, "SPIRIT_MANAGEMENT", False),
+    (31, "SPIRIT_MANAGEMENT", True),
+    (32, "SPIRIT_MANAGEMENT", True),
+
+    # --- EXECUTIVE_FUNCTION (Items 33 - 40) ---
+    (33, "EXECUTIVE_FUNCTION", False),
+    (34, "EXECUTIVE_FUNCTION", False),
+    (35, "EXECUTIVE_FUNCTION", False),
+    (36, "EXECUTIVE_FUNCTION", False),
+    (37, "EXECUTIVE_FUNCTION", False),
+    (38, "EXECUTIVE_FUNCTION", False),
+    (39, "EXECUTIVE_FUNCTION", False),
+    (40, "EXECUTIVE_FUNCTION", True),
+
+    # --- DECISION_MAKING (Items 41 - 48) ---
+    (41, "DECISION_MAKING", False),
+    (42, "DECISION_MAKING", False),
+    (43, "DECISION_MAKING", False),
+    (44, "DECISION_MAKING", False),
+    (45, "DECISION_MAKING", False),
+    (46, "DECISION_MAKING", False),
+    (47, "DECISION_MAKING", False),
+    (48, "DECISION_MAKING", False),
+)
+
+
+class EQi30ShortScoringStrategy(ScoringStrategy):
+    """Updated EQi-30 Short Assessment Scoring Strategy (6 competencies × 8 items = 48 items)."""
+
+    @property
+    def version(self) -> str:
+        return "eqi30-short-v1"
+
+    @property
+    def description(self) -> str:
+        return "Approved EQi-30 48-item short assessment scoring strategy (8 items per competency)."
+
+    def validate_input(
+        self, answers: List[dict], instrument_version: str
+    ) -> None:
+        if not answers:
+            raise ScoringInputError("Answers list cannot be empty for EQi-30 short scoring.")
+
+        for i, a in enumerate(answers):
+            val = a.get("value")
+            if val is None:
+                raise ScoringInputError(f"Missing response value at index {i}.")
+            try:
+                num_val = float(val)
+                if num_val < 1.0 or num_val > 10.0:
+                    raise ScoringInputError(
+                        f"Response value {num_val} for item {a.get('item_id')} out of range [1, 10]."
+                    )
+            except (ValueError, TypeError):
+                raise ScoringInputError(f"Invalid non-numeric value '{val}' at index {i}.")
+
+    def compute_scores(
+        self, answers: List[dict], instrument_version: str
+    ) -> List[CompetencyScoreResult]:
+        """Aggregate 48 items into 6 competency average scores and percentages."""
+        comp_scores: Dict[str, List[float]] = {
+            "SELF_MANAGEMENT": [],
+            "INTERPERSONAL_MANAGEMENT": [],
+            "STRESS_MANAGEMENT": [],
+            "SPIRIT_MANAGEMENT": [],
+            "EXECUTIVE_FUNCTION": [],
+            "DECISION_MAKING": [],
+        }
+
+        answer_by_id = {str(a.get("item_id")): float(a.get("value", 5.0)) for a in answers}
+
+        for item_id, comp, is_rev in EQI30_SHORT_ITEMS:
+            raw = answer_by_id.get(str(item_id), 5.0)
+            effective = (11.0 - raw) if is_rev else raw
+            comp_scores[comp].append(effective)
+
+        ordered_competencies = [
+            "SELF_MANAGEMENT",
+            "INTERPERSONAL_MANAGEMENT",
+            "STRESS_MANAGEMENT",
+            "SPIRIT_MANAGEMENT",
+            "EXECUTIVE_FUNCTION",
+            "DECISION_MAKING",
+        ]
+
+        results: List[CompetencyScoreResult] = []
+        for comp_code in ordered_competencies:
+            vals = comp_scores.get(comp_code, [])
+            avg_val = (sum(vals) / len(vals)) if vals else 5.0
+            score_pct = round(avg_val * 10.0, 1)
+
+            results.append(
+                CompetencyScoreResult(
+                    competency_code=comp_code,
+                    score=score_pct,
+                    scale_min=0.0,
+                    scale_max=100.0,
+                    ability_scores={"competency_average": round(avg_val, 2)},
+                )
+            )
+
+        return results
+
+
 def register_eqi30_scoring() -> None:
-    """Register the approved EQi-30 scoring strategy in the global registry."""
+    """Register both the standard and short EQi-30 scoring strategies."""
     registry = get_scoring_registry()
     strategy = EQi30ScoringStrategy()
     registry.register(strategy, set_default=True)
+    short_strategy = EQi30ShortScoringStrategy()
+    registry.register(short_strategy)
+

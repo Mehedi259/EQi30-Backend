@@ -134,3 +134,14 @@ class ChangePasswordSerializer(serializers.Serializer):
         if not self.context["request"].user.check_password(value):
             raise serializers.ValidationError("Current password is incorrect.")
         return value
+
+
+class SocialLoginSerializer(serializers.Serializer):
+    """Payload for Google and Apple social login / authentication."""
+
+    provider = serializers.ChoiceField(choices=["google", "apple"])
+    email = serializers.EmailField()
+    full_name = serializers.CharField(required=False, allow_blank=True, default="")
+    token = serializers.CharField(required=False, allow_blank=True, default="")
+    session_uuid = serializers.UUIDField(required=False, allow_null=True, default=None)
+
