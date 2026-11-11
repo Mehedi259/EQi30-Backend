@@ -40,6 +40,78 @@ def get_streak(user):
     return streak
 
 
+def get_streak_details(user):
+    """Return both consecutive streak and Doc 2's 5-of-7 'Most Days' model."""
+    today = timezone.localdate()
+    dates = {
+        timezone.localtime(dt).date()
+        for dt in _completed_sessions(user)
+        .exclude(completed_at=None)
+        .values_list("completed_at", flat=True)
+    }
+    window_start = today - timedelta(days=6)
+    active_days_last_7 = sum(1 for d in dates if window_start <= d <= today)
+    streak_safe = (
+        active_days_last_7 >= 5
+        or today in dates
+        or (today - timedelta(days=1)) in dates
+        or (today - timedelta(days=2)) in dates
+    )
+    return {
+        "model": "5_of_7",
+        "consecutive_days": get_streak(user),
+        "active_days_last_7": active_days_last_7,
+        "target_days_per_week": 5,
+        "streak_safe": streak_safe,
+    }
+
+
+def get_pending_reflections_today(user):
+    """Completed sessions from today that still lack a written DailyReflection."""
+    today = timezone.localdate()
+    today_sessions = [
+        s
+        for s in _completed_sessions(user)
+        .exclude(completed_at=None)
+        .select_related("ability", "ability__competency", "reflection")
+        .order_by("-completed_at")
+        if timezone.localtime(s.completed_at).date() == today
+    ]
+    if not today_sessions:
+        return []
+
+    content_map = {
+        (c.ability_id, c.day_number): c
+        for c in AbilityDayContent.objects.filter(
+            ability_id__in=[s.ability_id for s in today_sessions],
+            day_number__in=[s.content_day for s in today_sessions],
+        )
+    }
+    pending = []
+    for s in today_sessions:
+        ref = getattr(s, "reflection", None)
+        ref_text = (ref.reflection_text or "").strip() if ref else ""
+        if ref_text:
+            continue
+        content = content_map.get((s.ability_id, s.content_day))
+        pending.append(
+            {
+                "session_id": s.id,
+                "ability_id": s.ability_id,
+                "ability_name": s.ability.name,
+                "competency_name": s.ability.competency.name,
+                "reflection_question": (
+                    content.reflection_question
+                    if content and content.reflection_question
+                    else f"What did you notice today while practicing {s.ability.name}?"
+                ),
+                "existing_response": ref.response if ref else "",
+                "existing_practice_answer": ref.practice_answer if ref else "",
+            }
+        )
+    return pending
+
+
 def overall_progress(user):
     total = Ability.objects.filter(is_active=True).count()
     done = _completed_sessions(user).values("ability").distinct().count()

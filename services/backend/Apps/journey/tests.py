@@ -5,6 +5,8 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from Apps.abilities.models import Ability
+
 from .models import AnonymousOnboardingSession, AssessmentResult
 
 PASSWORD = "Sup3r-secret-pass!"
@@ -197,6 +199,7 @@ class OnboardingToJourneyFlowTests(APITestCase):
         self.assertEqual(response.data["user"]["name"], "Journey Tester")
         self.assertEqual(response.data["completed_activities"], 1)
         self.assertEqual(response.data["streak_days"], 1)
+        self.assertEqual(response.data["badges"], 1)
         self.assertEqual(response.data["today"]["sessions_remaining"], 1)
 
         response = self.client.get("/api/v1/progress/tracker/")
@@ -251,10 +254,11 @@ class OnboardingToJourneyFlowTests(APITestCase):
     def test_assessment_submission_with_raw_answers(self):
         session_uuid = self.create_session()
         payload = {
+            "mode": "long",
             "answers": [
                 {"item_id": i, "value": 8.0}
-                for i in range(1, 104)
-            ]
+                for i in range(1, 103)
+            ],
         }
         response = self.client.post(
             f"/api/v1/onboarding/{session_uuid}/assessment/", payload, format="json"
@@ -263,4 +267,87 @@ class OnboardingToJourneyFlowTests(APITestCase):
         self.assertEqual(len(response.data["results"]), 6)
         priorities = {r["ai_priority"] for r in response.data["results"]}
         self.assertEqual(priorities, {1, 2, 3, 4, 5, 6})
+
+    def test_assessment_submission_with_short_raw_answers(self):
+        session_uuid = self.create_session()
+        payload = {
+            "mode": "short",
+            "answers": [
+                {"item_id": i, "value": 6.0 if i <= 8 else 8.0}
+                for i in range(1, 49)
+            ],
+        }
+        response = self.client.post(
+            f"/api/v1/onboarding/{session_uuid}/assessment/", payload, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(response.data["results"]), 6)
+        by_code = {r["competency"]: r for r in response.data["results"]}
+        self.assertEqual(by_code["SELF_MANAGEMENT"]["ai_priority"], 1)
+
+    def test_ability_order_onboarding_claim_and_live_reordering(self):
+        session_uuid = self.create_session()
+        self.submit_assessment(session_uuid)
+        self.client.put(
+            f"/api/v1/onboarding/{session_uuid}/growth-plan/",
+            {"growth_plan": "MEDIUM"},
+            format="json",
+        )
+
+        # Pick cross-competency abilities: Planning (Executive) + Emotional Awareness (Self-Mgmt)
+        planning = Ability.objects.get(name="Planning")
+        em_awareness = Ability.objects.get(name="Emotional Awareness")
+        empathy = Ability.objects.get(name="Empathy")
+
+        get_res = self.client.get(
+            f"/api/v1/onboarding/{session_uuid}/abilities/?view=recommended"
+        )
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(get_res.data["abilities"]), 30)
+        self.assertEqual(get_res.data["abilities_per_day"], 2)
+
+        put_res = self.client.put(
+            f"/api/v1/onboarding/{session_uuid}/abilities/",
+            {"ability_ids": [planning.id, em_awareness.id]},
+            format="json",
+        )
+        self.assertEqual(put_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(put_res.data["ability_order"], [planning.id, em_awareness.id])
+
+        # Register & verify
+        reg_res = self.client.post(
+            "/api/v1/auth/register/",
+            {"email": "stack@example.com", "password": PASSWORD, "session_uuid": session_uuid},
+            format="json",
+        )
+        self.assertEqual(reg_res.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(reg_res.data["onboarding_claimed"])
+
+        from django.contrib.auth import get_user_model
+        user = get_user_model().objects.get(email="stack@example.com")
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        self.client.force_authenticate(user=user)
+
+        today_res = self.client.get("/api/v1/journey/today/")
+        self.assertEqual(today_res.status_code, status.HTTP_200_OK)
+        today_ids = [s["ability"]["id"] for s in today_res.data["sessions"]]
+        self.assertEqual(today_ids, [planning.id, em_awareness.id])
+
+        # Complete first session (Planning), then reorder pending ability slot to Empathy
+        first_session_id = today_res.data["sessions"][0]["session_id"]
+        self.client.post(
+            f"/api/v1/sessions/{first_session_id}/complete/", {}, format="json"
+        )
+
+        reorder_res = self.client.put(
+            "/api/v1/journey/abilities/order/",
+            {"ability_ids": [planning.id, empathy.id]},
+            format="json",
+        )
+        self.assertEqual(reorder_res.status_code, status.HTTP_200_OK)
+        new_today_ids = [s["ability"]["id"] for s in reorder_res.data["today"]["sessions"]]
+        self.assertIn(planning.id, new_today_ids)
+        self.assertIn(empathy.id, new_today_ids)
+        self.assertNotIn(em_awareness.id, new_today_ids)
 

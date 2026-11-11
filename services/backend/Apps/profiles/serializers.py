@@ -33,6 +33,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "daily_goal_minutes",
             "growth_plan",
             "practice_time",
+            "daily_reminder_enabled",
+            "miss_day_nudge_enabled",
+            "calendar_sync_enabled",
+            "ability_order",
         ]
 
     def validate_email(self, value):

@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from Apps.journey.services import ensure_journey, maybe_complete_journey
+from Apps.journey.services import ensure_journey, maybe_complete_journey, refresh_journey_day
 from Apps.progress.serializers import BadgeSerializer
 from Apps.progress.services import evaluate_badges
 
@@ -79,6 +79,54 @@ class SessionReflectionView(APIView):
 
 
 class WeeklyCheckInView(APIView):
+    """Check weekly check-in eligibility/real summary and submit weekly check-ins."""
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request):
+        journey = refresh_journey_day(ensure_journey(request.user))
+        current_day = max(journey.current_day or 1, 1)
+        week_number = ((current_day - 1) // 7) + 1
+        already_submitted = WeeklyCheckIn.objects.filter(
+            user=request.user,
+            journey=journey,
+            week_number=week_number,
+        ).exists()
+
+        week_start_day = (week_number - 1) * 7 + 1
+        week_end_day = week_number * 7
+        week_sessions = (
+            UserDailySession.objects.filter(
+                user=request.user,
+                journey=journey,
+                status=UserDailySession.Status.COMPLETED,
+                day_number__gte=week_start_day,
+                day_number__lte=week_end_day,
+            )
+            .select_related("ability")
+            .order_by("day_number", "id")
+        )
+        seen_abilities = set()
+        skills_practiced = []
+        for sess in week_sessions:
+            if sess.ability_id not in seen_abilities:
+                seen_abilities.add(sess.ability_id)
+                skills_practiced.append(sess.ability.name)
+
+        eligible = (
+            current_day >= 7
+            and not already_submitted
+            and week_sessions.exists()
+        )
+        return Response(
+            {
+                "eligible": eligible,
+                "week_number": week_number,
+                "already_submitted": already_submitted,
+                "skills_count": len(skills_practiced),
+                "skills_practiced": skills_practiced,
+            }
+        )
+
     @extend_schema(request=WeeklyCheckInSerializer, responses={201: WeeklyCheckInSerializer})
     def post(self, request):
         serializer = WeeklyCheckInSerializer(data=request.data)

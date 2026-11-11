@@ -109,6 +109,7 @@ class AnonymousOnboardingSession(models.Model):
     daily_reminder_enabled = models.BooleanField(default=True)
     miss_day_nudge_enabled = models.BooleanField(default=True)
     calendar_sync_enabled = models.BooleanField(default=False)
+    ability_order = models.JSONField(default=list, blank=True)
     
     expires_at = models.DateTimeField(default=default_session_expiry)
     created_at = models.DateTimeField(auto_now_add=True)

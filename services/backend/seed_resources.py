@@ -6,6 +6,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from Apps.resources.models import Resource
 
 def download_file(url):
@@ -118,7 +119,7 @@ def seed():
         with open(file_path, "wb") as f:
             f.write(data["file_content"])
 
-        # Create the DB record and set file.name directly (no upload via .save())
+        # Create the DB record and reference the pre-written relative path
         r = Resource(
             title=data["title"],
             subtitle=data.get("subtitle", ""),
@@ -128,7 +129,8 @@ def seed():
             difficulty_level=data.get("difficulty_level"),
             is_featured=data["is_featured"],
         )
-        r.file.save(data["file_name"], ContentFile(data["file_content"]))
+        r.file.name = f"resources/{data['file_name']}"
+        r.save()
     
     print("Database seeding completed.")
 

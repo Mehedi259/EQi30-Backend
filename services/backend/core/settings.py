@@ -230,7 +230,7 @@ SPECTACULAR_SETTINGS = {
 # EQi30 business rules
 # ---------------------------------------------------------------------------
 # Anonymous onboarding data is deleted if the user does not register in time.
-ANONYMOUS_SESSION_TTL_MINUTES = env.int("ANONYMOUS_SESSION_TTL_MINUTES", default=10)
+ANONYMOUS_SESSION_TTL_MINUTES = env.int("ANONYMOUS_SESSION_TTL_MINUTES", default=60)
 # Password-reset OTP lifetime.
 PASSWORD_RESET_OTP_TTL_MINUTES = env.int("PASSWORD_RESET_OTP_TTL_MINUTES", default=10)
 # Confirmed challenge length (the 60-day Figma screen is NOT confirmed yet).

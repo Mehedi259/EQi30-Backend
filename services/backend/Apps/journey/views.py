@@ -13,9 +13,11 @@ from .models import (
     AssessmentResult,
     GrowthPlan,
     GuidedJourneyImage,
+    JourneyType,
     PracticeTimeOption,
 )
 from .serializers import (
+    AbilityOrderUpdateSerializer,
     AssessmentSubmitSerializer,
     GrowthPlanSelectSerializer,
     GrowthPlanSerializer,
@@ -88,11 +90,27 @@ class OnboardingAssessmentView(APIView):
             entries = serializer.validated_data["results"]
         else:
             from Apps.abilities.models import Competency
-            from Apps.ai.domain.eqi30_scoring import EQi30ScoringStrategy
-            strategy = EQi30ScoringStrategy()
+            from Apps.ai.domain.eqi30_scoring import (
+                EQi30ScoringStrategy,
+                EQi30ShortScoringStrategy,
+            )
+
             raw_answers = serializer.validated_data["answers"]
-            strategy.validate_input(raw_answers, "eqi30-self-report-v1")
-            computed = strategy.compute_scores(raw_answers, "eqi30-self-report-v1")
+            mode = (serializer.validated_data.get("mode") or "").lower()
+            requested_version = (
+                serializer.validated_data.get("instrument_version") or ""
+            ).strip()
+            use_short = (
+                mode == "short"
+                or requested_version == "eqi30-short-v1"
+                or (not mode and not requested_version and len(raw_answers) <= 48)
+            )
+            strategy = EQi30ShortScoringStrategy() if use_short else EQi30ScoringStrategy()
+            instrument_version = (
+                requested_version or strategy.version
+            )
+            strategy.validate_input(raw_answers, instrument_version)
+            computed = strategy.compute_scores(raw_answers, instrument_version)
             
             # Sort ascending by score -> lowest score gets priority 1 (growth area)
             sorted_comp = sorted(computed, key=lambda c: c.score)
@@ -330,3 +348,67 @@ class PreviousJourneyAbilityDetailsView(APIView):
             })
             
         return Response({"history": history})
+
+
+class OnboardingAbilityOrderView(APIView):
+    """Explore all 30 abilities and save prioritized ability stack during onboarding."""
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request, session_uuid):
+        session = get_active_session(session_uuid)
+        pace = session.growth_plan.abilities_per_day if session.growth_plan else 1
+        view_mode = request.query_params.get("view", "recommended")
+        payload = services.explore_abilities_payload(
+            results_qs=session.assessment_results.all(),
+            journey_type=session.journey_type,
+            active_order_ids=session.ability_order,
+            abilities_per_day=pace,
+            view_mode=view_mode,
+        )
+        return Response(payload)
+
+    @extend_schema(request=AbilityOrderUpdateSerializer, responses=SessionStateSerializer)
+    def put(self, request, session_uuid):
+        session = get_active_session(session_uuid)
+        serializer = AbilityOrderUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        session.ability_order = serializer.validated_data["ability_ids"]
+        session.save(update_fields=["ability_order"])
+        return Response(SessionStateSerializer(session).data)
+
+
+class JourneyAbilityOrderView(APIView):
+    """Explore all 30 abilities and reorder active priority stack mid-journey."""
+
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    def get(self, request):
+        journey = services.refresh_journey_day(services.ensure_journey(request.user))
+        profile = getattr(request.user, "profile", None)
+        view_mode = request.query_params.get("view", "custom")
+        payload = services.explore_abilities_payload(
+            results_qs=AssessmentResult.objects.filter(user=request.user),
+            journey_type=journey.journey_type if journey else JourneyType.AI_RECOMMENDED,
+            active_order_ids=getattr(profile, "ability_order", []) if profile else [],
+            abilities_per_day=services.get_pace(request.user),
+            view_mode=view_mode,
+        )
+        return Response(payload)
+
+    @extend_schema(request=AbilityOrderUpdateSerializer, responses={200: OpenApiTypes.OBJECT})
+    def put(self, request):
+        serializer = AbilityOrderUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ability_ids = serializer.validated_data["ability_ids"]
+
+        profile = request.user.profile
+        profile.ability_order = ability_ids
+        profile.save(update_fields=["ability_order"])
+
+        journey = services.refresh_journey_day(services.ensure_journey(request.user))
+        services.sync_pending_today_sessions(request.user, journey)
+        return Response({
+            "ability_order": profile.ability_order,
+            "today": services.journey_today(request.user),
+        })

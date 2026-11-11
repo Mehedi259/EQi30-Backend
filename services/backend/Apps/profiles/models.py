@@ -31,6 +31,7 @@ class UserProfile(models.Model):
     daily_reminder_enabled = models.BooleanField(default=True)
     miss_day_nudge_enabled = models.BooleanField(default=True)
     calendar_sync_enabled = models.BooleanField(default=False)
+    ability_order = models.JSONField(default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

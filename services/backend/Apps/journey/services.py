@@ -72,12 +72,14 @@ def claim_onboarding_session(session_uuid, user):
     profile.daily_reminder_enabled = session.daily_reminder_enabled
     profile.miss_day_nudge_enabled = session.miss_day_nudge_enabled
     profile.calendar_sync_enabled = session.calendar_sync_enabled
+    profile.ability_order = clean_ability_order(session.ability_order)
     profile.save(update_fields=[
         "growth_plan", 
         "practice_time", 
         "daily_reminder_enabled", 
         "miss_day_nudge_enabled", 
-        "calendar_sync_enabled"
+        "calendar_sync_enabled",
+        "ability_order",
     ])
 
     if not user.journeys.exclude(status=UserJourney.Status.COMPLETED).exists():
@@ -121,9 +123,27 @@ def get_priority_map(user, journey=None):
     return priorities
 
 
-def ordered_competencies(user, journey=None):
-    """Active competencies in the user's final personalized order."""
-    priorities = get_priority_map(user, journey)
+def clean_ability_order(raw_ids):
+    """Filter raw ability IDs down to unique active Ability IDs preserving order."""
+    if not isinstance(raw_ids, list):
+        return []
+    active_ids = set(
+        Ability.objects.filter(is_active=True).values_list("id", flat=True)
+    )
+    cleaned = []
+    seen = set()
+    for item in raw_ids:
+        try:
+            aid = int(item)
+        except (TypeError, ValueError):
+            continue
+        if aid in active_ids and aid not in seen:
+            seen.add(aid)
+            cleaned.append(aid)
+    return cleaned
+
+
+def _competencies_for_priorities(priorities):
     competencies = list(
         Competency.objects.filter(is_active=True).prefetch_related("abilities")
     )
@@ -131,10 +151,9 @@ def ordered_competencies(user, journey=None):
     return competencies
 
 
-def ordered_abilities(user, journey=None):
-    """The 30 abilities flattened in personalized journey order."""
+def _flatten_competency_abilities(competencies):
     abilities = []
-    for competency in ordered_competencies(user, journey):
+    for competency in competencies:
         abilities.extend(
             a for a in sorted(
                 competency.abilities.all(), key=lambda a: (a.default_order, a.id)
@@ -142,6 +161,133 @@ def ordered_abilities(user, journey=None):
             if a.is_active
         )
     return abilities
+
+
+def ordered_competencies(user, journey=None):
+    """Active competencies in the user's final personalized order."""
+    return _competencies_for_priorities(get_priority_map(user, journey))
+
+
+def ordered_abilities(user, journey=None):
+    """The 30 abilities in user-picked priority order followed by competency order."""
+    default_seq = _flatten_competency_abilities(ordered_competencies(user, journey))
+    profile = getattr(user, "profile", None)
+    picked_ids = clean_ability_order(getattr(profile, "ability_order", None) if profile else [])
+    if not picked_ids:
+        return default_seq
+
+    by_id = {a.id: a for a in default_seq}
+    picked_set = set()
+    prioritized = []
+    for aid in picked_ids:
+        if aid in by_id and aid not in picked_set:
+            picked_set.add(aid)
+            prioritized.append(by_id[aid])
+    for ability in default_seq:
+        if ability.id not in picked_set:
+            prioritized.append(ability)
+    return prioritized
+
+
+def explore_abilities_payload(
+    *,
+    results_qs,
+    journey_type,
+    active_order_ids,
+    abilities_per_day,
+    view_mode="recommended",
+):
+    """Build the 30-ability explorer & ordering payload shared by onboarding and journey."""
+    rec_map = {r.competency_id: r.ai_priority for r in results_qs}
+    chosen_map = {
+        r.competency_id: (r.user_priority if journey_type == JourneyType.CUSTOM and r.user_priority else r.ai_priority)
+        for r in results_qs
+    }
+    rec_competencies = _competencies_for_priorities(rec_map)
+    chosen_competencies = _competencies_for_priorities(chosen_map)
+    rec_abilities = _flatten_competency_abilities(rec_competencies)
+    chosen_abilities = _flatten_competency_abilities(chosen_competencies)
+
+    rec_rank = {a.id: idx for idx, a in enumerate(rec_abilities, start=1)}
+    chosen_rank = {a.id: idx for idx, a in enumerate(chosen_abilities, start=1)}
+    clean_picked = clean_ability_order(active_order_ids)
+    picked_pos = {aid: idx for idx, aid in enumerate(clean_picked, start=1)}
+
+    mode = (view_mode or "").lower()
+    if mode == "chosen":
+        display_seq = chosen_abilities
+    elif mode == "custom" and clean_picked:
+        by_id = {a.id: a for a in rec_abilities}
+        seen = set(clean_picked)
+        display_seq = [by_id[aid] for aid in clean_picked if aid in by_id] + [
+            a for a in rec_abilities if a.id not in seen
+        ]
+    else:
+        display_seq = rec_abilities
+
+    items = []
+    for ability in display_seq:
+        items.append({
+            "id": ability.id,
+            "name": ability.name,
+            "description": ability.description,
+            "what_it_is": ability.what_it_is or ability.description,
+            "why_it_matters": ability.why_it_matters,
+            "what_you_will_do": ability.what_you_will_do,
+            "icon": _icon_url(ability),
+            "competency": {
+                "id": ability.competency.id,
+                "name": ability.competency.name,
+                "code": ability.competency.code,
+            },
+            "recommended_rank": rec_rank[ability.id],
+            "chosen_rank": chosen_rank[ability.id],
+            "selected_position": picked_pos.get(ability.id),
+        })
+
+    return {
+        "view_mode": mode or "recommended",
+        "journey_type": journey_type,
+        "abilities_per_day": abilities_per_day,
+        "ability_order": clean_picked,
+        "competencies_recommended": [
+            {"id": c.id, "name": c.name, "code": c.code} for c in rec_competencies
+        ],
+        "competencies_chosen": [
+            {"id": c.id, "name": c.name, "code": c.code} for c in chosen_competencies
+        ],
+        "abilities": items,
+    }
+
+
+@transaction.atomic
+def sync_pending_today_sessions(user, journey):
+    """Replace unstarted PENDING today sessions when ability_order changes mid-journey."""
+    if journey is None or journey.status == UserJourney.Status.COMPLETED:
+        return []
+    refresh_journey_day(journey)
+    pace = get_pace(user)
+    desired_slots = day_slots(journey, pace, ordered_abilities(user, journey), journey.current_day)
+    desired_ability_ids = {ability.id for ability, _ in desired_slots}
+
+    today_sessions = list(
+        UserDailySession.objects.filter(
+            user=user,
+            journey=journey,
+            day_number=journey.current_day,
+        ).select_related("ability")
+    )
+    # Remove only unstarted pending slots without saved reflections that aren't in the new top slots.
+    for s in today_sessions:
+        has_reflection = hasattr(s, "reflection")
+        if (
+            s.status == UserDailySession.Status.PENDING
+            and not has_reflection
+            and s.ability_id not in desired_ability_ids
+        ):
+            s.delete()
+
+    return build_today_sessions(user, journey)
 
 
 def get_pace(user):

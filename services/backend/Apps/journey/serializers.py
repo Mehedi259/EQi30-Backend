@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from Apps.abilities.models import Competency
+from Apps.abilities.models import Ability, Competency
 from Apps.abilities.serializers import CompetencySummarySerializer
 
 from .models import (
@@ -44,6 +44,7 @@ class SessionStateSerializer(serializers.ModelSerializer):
             "daily_reminder_enabled",
             "miss_day_nudge_enabled",
             "calendar_sync_enabled",
+            "ability_order",
             "expires_at",
             "results",
         ]
@@ -81,6 +82,12 @@ def _validate_full_coverage(entries, priority_key):
 class AssessmentSubmitSerializer(serializers.Serializer):
     results = AssessmentEntrySerializer(many=True, required=False)
     answers = serializers.ListField(child=serializers.DictField(), required=False)
+    mode = serializers.ChoiceField(
+        choices=("short", "long", "full"), required=False, allow_blank=True
+    )
+    instrument_version = serializers.CharField(
+        required=False, allow_blank=True, max_length=64
+    )
 
     def validate(self, attrs):
         if not attrs.get("results") and not attrs.get("answers"):
@@ -144,3 +151,24 @@ class GuidedJourneyImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = GuidedJourneyImage
         fields = ["id", "competency", "before_image", "after_image", "display_order"]
+
+
+class AbilityOrderUpdateSerializer(serializers.Serializer):
+    ability_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        min_length=1,
+        max_length=30,
+    )
+
+    def validate_ability_ids(self, value):
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError("Duplicate abilities are not allowed.")
+        active_ids = set(
+            Ability.objects.filter(is_active=True).values_list("id", flat=True)
+        )
+        invalid = [aid for aid in value if aid not in active_ids]
+        if invalid:
+            raise serializers.ValidationError(
+                f"Unknown or inactive ability IDs: {invalid}"
+            )
+        return value
