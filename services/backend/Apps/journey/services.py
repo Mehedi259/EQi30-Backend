@@ -170,9 +170,11 @@ def ordered_competencies(user, journey=None):
 
 def ordered_abilities(user, journey=None):
     """The 30 abilities in user-picked priority order followed by competency order."""
+    from Apps.profiles.models import UserProfile
+
     default_seq = _flatten_competency_abilities(ordered_competencies(user, journey))
-    profile = getattr(user, "profile", None)
-    picked_ids = clean_ability_order(getattr(profile, "ability_order", None) if profile else [])
+    profile = UserProfile.objects.filter(user=user).only("ability_order").first()
+    picked_ids = clean_ability_order(profile.ability_order if profile else [])
     if not picked_ids:
         return default_seq
 
@@ -291,7 +293,9 @@ def sync_pending_today_sessions(user, journey):
 
 
 def get_pace(user):
-    profile = getattr(user, "profile", None)
+    from Apps.profiles.models import UserProfile
+
+    profile = UserProfile.objects.select_related("growth_plan").filter(user=user).first()
     plan = profile.growth_plan if profile else None
     return plan.abilities_per_day if plan else 1
 

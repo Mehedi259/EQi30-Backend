@@ -92,3 +92,22 @@ class HomeDashboardAndAiSecurityTests(APITestCase):
         self.assertEqual(sugg.data["grounded_reflections_count"], 1)
         self.assertTrue(len(sugg.data["suggestions"]) >= 2)
         self.assertIn("Hopeful", sugg.data["summary"])
+
+    def test_profile_growth_plan_update_syncs_pending_today_sessions(self):
+        self._auth_user("pace_sync@example.com")
+        today_low = self.client.get("/api/v1/journey/today/")
+        self.assertEqual(today_low.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(today_low.data["sessions"]), 1)
+
+        res = self.client.patch(
+            "/api/v1/user/profile/",
+            {"growth_plan": "HIGH", "daily_goal_minutes": 15},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["growth_plan"], "HIGH")
+        self.assertEqual(res.data["daily_goal_minutes"], 15)
+
+        today_high = self.client.get("/api/v1/journey/today/")
+        self.assertEqual(today_high.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(today_high.data["sessions"]), 3)
